@@ -1,14 +1,15 @@
 import os
 import tempfile
-from pathlib import Path
 
-from fastapi import APIRouter, HTTPException, Query, Request
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from app.auth.google_oauth import get_drive_service
-from app.core.rate_limit import limiter
+from app.auth.google_oauth import (
+    get_drive_service,
+    get_session,
+    login_with_google,
+)
 from app.drive.client import (
-    GOOGLE_DOC_MIME,
     download_file,
     export_google_doc,
     list_files,
@@ -18,79 +19,83 @@ from app.readers.pdf import read_pdf
 from app.readers.txt import read_txt
 from app.summarizer.llm import summarize
 
+router = APIRouter()
 
-class DriveSummarizeRequest(BaseModel):
+class SummarizeRequest(BaseModel):
+    session_id: str
     file_id: str
-    file_name: str
+    filename: str
     mime_type: str
 
 
-router = APIRouter()
+# ---------- AUTH ----------
 
+@router.post("/auth/login")
+def google_login(auth_code: str = Query(...)):
+    try:
+        session_id = login_with_google(auth_code)
+        return {"session_id": session_id}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/auth/me")
+def get_current_user(session_id: str = Query(...)):
+    try:
+        session = get_session(session_id)
+        return {
+            "email": session["email"],
+            "name": session["name"],
+        }
+    except Exception as e:
+        raise HTTPException(status_code=401, detail=str(e))
+
+
+# ---------- DRIVE ----------
 
 @router.post("/drive/files")
-@limiter.limit("10/minute")
-def get_files(
-    request: Request,
-    auth_code: str = Query(..., description="Google OAuth authorization code"),
-):
-    service = get_drive_service(auth_code)
-    return list_files(service)
-
-
-@router.post("/summarize")
-@limiter.limit("3/minute")
-def summarize_text(
-    request: Request, content: str = Query(..., description="Plain text to summarize")
-):
-    return {"summary": summarize(content)}
+def get_files(session_id: str = Query(...)):
+    try:
+        service = get_drive_service(session_id)
+        return list_files(service)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @router.post("/drive/summarize")
-@limiter.limit("3/minute")
-def summarize_drive_file(
-    request: Request,
-    payload: DriveSummarizeRequest,
-    auth_code: str = Query(..., description="Google OAuth authorization code"),
-):
-    service = get_drive_service(auth_code)
+def summarize_drive_file(payload: SummarizeRequest):
+    try:
+        session_id = payload.session_id
+        file_id = payload.file_id
+        filename = payload.filename
+        mime_type = payload.mime_type
 
-    suffix = Path(payload.file_name).suffix.lower()
+        service = get_drive_service(session_id)
 
-    with tempfile.TemporaryDirectory() as tmpdir:
-        file_path = os.path.join(tmpdir, payload.file_name)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            local_path = os.path.join(tmpdir, filename)
 
-        # 1️⃣ Download or export file
-        if payload.mime_type == GOOGLE_DOC_MIME:
-            export_google_doc(service, payload.file_id, file_path)
-            text = read_txt(file_path)
-
-        else:
-            download_file(service, payload.file_id, file_path)
-
-            if suffix == ".pdf":
-                text = read_pdf(file_path)
-            elif suffix == ".docx":
-                text = read_docx(file_path)
-            elif suffix == ".txt":
-                text = read_txt(file_path)
+            if mime_type == "application/vnd.google-apps.document":
+                export_google_doc(service, file_id, local_path)
+                text = read_txt(local_path)
             else:
-                raise HTTPException(
-                    status_code=400,
-                    detail=f"Unsupported file type: {suffix}",
-                )
+                download_file(service, file_id, local_path)
+
+                if filename.lower().endswith(".pdf"):
+                    text = read_pdf(local_path)
+                elif filename.lower().endswith(".docx"):
+                    text = read_docx(local_path)
+                elif filename.lower().endswith(".txt"):
+                    text = read_txt(local_path)
+                else:
+                    raise HTTPException(status_code=400, detail="Unsupported file type")
 
         if not text.strip():
-            raise HTTPException(
-                status_code=400,
-                detail="No readable text found in file",
-            )
+            raise HTTPException(status_code=400, detail="File is empty")
 
-        # 2️⃣ LLM summarization (your existing logic)
         summary = summarize(text)
 
-        return {
-            "file_id": payload.file_id,
-            "file_name": payload.file_name,
-            "summary": summary,
-        }
+        return {"summary": summary}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
