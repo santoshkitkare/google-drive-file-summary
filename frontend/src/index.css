@@ -1,0 +1,60 @@
+:root {
+  --bg-primary: #0b0f1a;
+  --bg-secondary: #11162a;
+  --bg-glass: rgba(255, 255, 255, 0.06);
+  --border-glass: rgba(255, 255, 255, 0.12);
+
+  --text-primary: #eaeaf0;
+  --text-secondary: #a1a6c3;
+  --accent: #7c8cff;
+
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color: var(--text-primary);
+  background: radial-gradient(
+    circle at top,
+    #141a35 0%,
+    var(--bg-primary) 45%
+  );
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: transparent;
+}
+
+button {
+  border-radius: 10px;
+  border: 1px solid var(--border-glass);
+  padding: 0.65em 1.4em;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-primary);
+  background: linear-gradient(
+    135deg,
+    #1a1f3c,
+    #151a33
+  );
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+button:hover {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

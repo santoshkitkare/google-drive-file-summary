@@ -1,0 +1,63 @@
+[project]
+name = "googledrivefilesummary"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "fastapi>=0.115.0",
+    "uvicorn>=0.30.0",
+    "google-api-python-client>=2.187.0",
+    "google-auth>=2.43.0",
+    "google-auth-oauthlib>=1.2.2",
+    "openai>=2.11.0",
+    "pre-commit>=4.5.0",
+    "pypdf>=6.4.2",
+    "pytest>=9.0.2",
+    "pytest-mock>=3.15.1",
+    "python-docx>=1.2.0",
+    "python-dotenv>=1.2.1",
+    "ruff>=0.14.9",
+    "slowapi>=0.1.9",
+]
+
+# -------------------------------
+# Ruff configuration (UPDATED)
+# -------------------------------
+
+[tool.ruff]
+line-length = 100
+target-version = "py313"
+exclude = [
+  ".venv",
+  "__pycache__",
+]
+
+# -------------------------------
+# Lint rules (MOVED HERE)
+# -------------------------------
+[tool.ruff.lint]
+select = [
+  "E",    # pycodestyle
+  "F",    # pyflakes
+  "W",    # warnings
+  "I",    # import sorting
+  "C90",  # cyclomatic complexity
+]
+
+ignore = [
+  "E501", # line length handled by formatter
+]
+
+# -------------------------------
+# Complexity rules (MOVED HERE)
+# -------------------------------
+[tool.ruff.lint.mccabe]
+max-complexity = 10
+
+# -------------------------------
+# Formatter config (UNCHANGED)
+# -------------------------------
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
