@@ -3,6 +3,7 @@ import tempfile
 
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
+from app.drive.client import list_root_items, list_folder_items
 
 from app.auth.google_oauth import (
     get_drive_service,
@@ -97,6 +98,27 @@ def summarize_drive_file(payload: SummarizeRequest):
         summary = summarize(text, cache_key)
 
         return {"summary": summary}
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.post("/drive/files")
+def get_drive_items(
+    session_id: str = Query(...),
+    folder_id: str | None = Query(default=None),
+):
+    """
+    - If folder_id is None → list root items
+    - Else → list items inside folder
+    """
+    try:
+        service = get_drive_service(session_id)
+
+        if folder_id:
+            return list_folder_items(service, folder_id)
+        else:
+            return list_root_items(service)
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
