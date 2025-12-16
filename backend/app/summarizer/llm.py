@@ -1,5 +1,6 @@
-from openai import OpenAI
 from functools import lru_cache
+
+from openai import OpenAI
 
 from app.core.config import settings
 from app.summarizer.chunker import chunk_text

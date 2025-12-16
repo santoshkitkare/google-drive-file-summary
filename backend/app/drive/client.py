@@ -23,25 +23,6 @@ def list_files(service):
     return files
 
 
-def download_file(service, file_id, filename):
-    request = service.files().get_media(fileId=file_id)
-    with open(filename, "wb") as f:
-        downloader = MediaIoBaseDownload(f, request)
-        done = False
-        while not done:
-            _, done = downloader.next_chunk()
-
-
-def export_google_doc(service, file_id, filename):
-    request = service.files().export_media(fileId=file_id, mimeType="text/plain")
-
-    with open(filename, "wb") as f:
-        downloader = MediaIoBaseDownload(f, request)
-        done = False
-        while not done:
-            _, done = downloader.next_chunk()
-
-
 def list_root_items(service):
     """
     List folders + files present at the top level of My Drive
