@@ -93,7 +93,8 @@ def summarize_drive_file(payload: SummarizeRequest):
         if not text.strip():
             raise HTTPException(status_code=400, detail="File is empty")
 
-        summary = summarize(text)
+        cache_key = f"{file_id}:{filename}"
+        summary = summarize(text, cache_key)
 
         return {"summary": summary}
 

@@ -1,4 +1,5 @@
 from openai import OpenAI
+from functools import lru_cache
 
 from app.core.config import settings
 from app.summarizer.chunker import chunk_text
@@ -9,8 +10,10 @@ def get_openai_client() -> OpenAI:
         raise RuntimeError("OPENAI_API_KEY is not configured")
     return OpenAI(api_key=settings.OPENAI_API_KEY)
 
-
-def summarize_chunk(chunk: str) -> str:
+# -------------------------------
+# 🔹 LLM CALLS (LOW LEVEL)
+# -------------------------------
+def _summarize_chunk(chunk: str) -> str:
     client = get_openai_client()
 
     prompt = f"""
@@ -33,14 +36,20 @@ TEXT:
     return response.choices[0].message.content.strip()
 
 
-def reduce_summaries(partial_summaries: list[str]) -> str:
+def _reduce_summaries(partial_summaries: list[str]) -> str:
     client = get_openai_client()
 
     combined = "\n".join(partial_summaries)
 
     final_prompt = f"""
-Combine the following summaries into a single coherent summary
-of no more than {settings.MAX_SUMMARY_WORDS} words.
+Combine the following summaries into a concise, high-signal summary.
+
+Requirements:
+- Use clear bullet points (• or -).
+- Include ONLY the most important information.
+- Focus on key facts, decisions, findings, and conclusions.
+- Avoid repetition, filler, and generic phrasing.
+- Total length MUST NOT exceed {settings.MAX_SUMMARY_WORDS} words.
 
 SUMMARIES:
 {combined}
@@ -58,7 +67,24 @@ SUMMARIES:
     return response.choices[0].message.content.strip()
 
 
-def summarize(text: str) -> str:
+
+
+@lru_cache(maxsize=128)
+def summarize_cached(cache_key: str, text: str) -> str:
+    """
+    Cached summary.
+    cache_key should uniquely identify the file (e.g. file_id + filename)
+    """
     chunks = chunk_text(text)
-    partial_summaries = [summarize_chunk(chunk) for chunk in chunks]
-    return reduce_summaries(partial_summaries)
+    partial_summaries = [_summarize_chunk(chunk) for chunk in chunks]
+    return _reduce_summaries(partial_summaries)
+
+# -------------------------------
+# 🔹 PUBLIC API
+# -------------------------------
+
+def summarize(text: str, cache_key: str) -> str:
+    """
+    Public summarization API with caching
+    """
+    return summarize_cached(cache_key, text)
