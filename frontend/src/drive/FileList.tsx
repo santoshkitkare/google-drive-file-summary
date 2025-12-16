@@ -1,67 +1,3 @@
-// import { useEffect, useRef, useState } from "react";
-// import { api } from "../api/backend";
-// import type { DriveFile } from "../types";
-
-// type Props = {
-//   authCode: string;
-// };
-
-// export default function FileList({ authCode }: Props) {
-//   const [files, setFiles] = useState<DriveFile[]>([]);
-//   const [loading, setLoading] = useState(false);
-//   const [error, setError] = useState<string | null>(null);
-
-
-//   // 🔐 GUARD: prevents auth_code reuse
-//   const hasFetched = useRef(false);
-
-//   useEffect(() => {
-//     if (!authCode) return;
-
-//     // 🚨 This is the IMPORTANT PART
-//     if (hasFetched.current) return;
-//     hasFetched.current = true;
-
-//     const fetchFiles = async () => {
-//       try {
-//         setLoading(true);
-//         const res = await api.post(
-//           "/drive/files",
-//           null,
-//           { params: { auth_code: authCode } }
-//         );
-//         setFiles(res.data.files || []);
-//       } catch (err) {
-//         setError("Failed to load files");
-//       } finally {
-//         setLoading(false);
-//       }
-//     };
-
-//     fetchFiles();
-//   }, [authCode]);
-
-//   if (loading) return <p>Loading Drive files…</p>;
-//   if (error) return <p style={{ color: "red" }}>{error}</p>;
-
-//   return (
-//     <div>
-//       <h3>Your Google Drive Files</h3>
-//       <ul>
-//         {files.map((f) => (
-//           <li key={f.id}>
-//             <strong>{f.name}</strong>
-//             <span style={{ marginLeft: 8, color: "#666" }}>
-//               ({f.mimeType})
-//             </span>
-//           </li>
-//         ))}
-//       </ul>
-//     </div>
-//   );
-// }
-
-
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 
@@ -77,10 +13,13 @@ type Props = {
 
 export default function FileList({ authCode }: Props) {
   const [files, setFiles] = useState<DriveFile[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<DriveFile | null>(null);
+  const [loadingFiles, setLoadingFiles] = useState(false);
+  const [summarizing, setSummarizing] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // 🔥 prevents double-call in React StrictMode
+  // 🔒 Prevent duplicate API calls (React StrictMode)
   const hasFetched = useRef(false);
 
   useEffect(() => {
@@ -93,7 +32,7 @@ export default function FileList({ authCode }: Props) {
 
   async function fetchFiles() {
     try {
-      setLoading(true);
+      setLoadingFiles(true);
 
       const res = await axios.post(
         "http://localhost:8000/drive/files",
@@ -101,37 +40,97 @@ export default function FileList({ authCode }: Props) {
         { params: { auth_code: authCode } }
       );
 
-      console.log("Drive files response:", res.data);
-
-      // 👇 THIS is critical
-      setFiles(res.data);
+      console.log("Drive files:", res.data);
+      setFiles(res.data); // backend returns array
     } catch (err) {
       console.error(err);
       setError("Failed to load files");
     } finally {
-      setLoading(false);
+      setLoadingFiles(false);
     }
   }
 
-  if (loading) return <p>Loading files…</p>;
+  async function handleSummarize() {
+    if (!selectedFile) return;
+
+    setSummarizing(true);
+    setSummary(null);
+    setError(null);
+
+    try {
+      const res = await axios.post(
+        "http://localhost:8000/drive/summarize",
+        {
+          file_id: selectedFile.id,
+          file_name: selectedFile.name,
+          mime_type: selectedFile.mimeType,
+        },
+        {
+          params: { auth_code: authCode },
+        }
+      );
+
+      console.log("Summary response:", res.data);
+      setSummary(res.data.summary);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to summarize file");
+    } finally {
+      setSummarizing(false);
+    }
+  }
+
+  if (loadingFiles) return <p>📂 Loading files…</p>;
   if (error) return <p style={{ color: "red" }}>{error}</p>;
 
   return (
-    <div>
+    <div style={{ marginTop: 24 }}>
       <h3>Your Google Drive Files</h3>
 
-      {files.length === 0 && <p>No files found.</p>}
-
-      <ul>
-        {files.map((f) => (
-          <li key={f.id}>
-            📄 {f.name}
-            <small style={{ marginLeft: 8, color: "#666" }}>
-              ({f.mimeType})
-            </small>
+      <ul style={{ listStyle: "none", padding: 0 }}>
+        {files.map((file) => (
+          <li
+            key={file.id}
+            onClick={() => setSelectedFile(file)}
+            style={{
+              padding: "8px 12px",
+              marginBottom: 6,
+              cursor: "pointer",
+              borderRadius: 6,
+              background:
+                selectedFile?.id === file.id ? "#e6f0ff" : "#f7f7f7",
+              border:
+                selectedFile?.id === file.id
+                  ? "1px solid #4a90e2"
+                  : "1px solid #ddd",
+            }}
+          >
+            📄 {file.name}
+            <div style={{ fontSize: 12, color: "#666" }}>
+              {file.mimeType}
+            </div>
           </li>
         ))}
       </ul>
+
+      <button
+        onClick={handleSummarize}
+        disabled={!selectedFile || summarizing}
+        style={{
+          marginTop: 16,
+          padding: "10px 16px",
+          cursor: selectedFile ? "pointer" : "not-allowed",
+        }}
+      >
+        🧠 {summarizing ? "Summarizing…" : "Summarize Selected File"}
+      </button>
+
+      {summary && (
+        <div style={{ marginTop: 24 }}>
+          <h3>Summary</h3>
+          <p style={{ whiteSpace: "pre-wrap" }}>{summary}</p>
+        </div>
+      )}
     </div>
   );
 }
