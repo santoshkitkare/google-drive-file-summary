@@ -1,136 +1,217 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
 
-type DriveFile = {
+/* ---------------- TYPES ---------------- */
+
+interface FileMeta {
   id: string;
   name: string;
   mimeType: string;
+}
+
+interface CachedSummary {
+  file_id: string;
+  file_name: string;
+  summary: string;
+  cachedAt: number;
+}
+
+/* ---------------- SVG ICONS ---------------- */
+
+const PdfIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="#e74c3c">
+    <path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
+  </svg>
+);
+
+const DocIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="#3498db">
+    <path d="M6 2h9l5 5v15a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2z" />
+  </svg>
+);
+
+const TextIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="#2ecc71">
+    <path d="M4 4h16v2H4zm0 6h16v2H4zm0 6h10v2H4z" />
+  </svg>
+);
+
+const getFileIcon = (mime: string) => {
+  if (mime.includes("pdf")) return <PdfIcon />;
+  if (mime.includes("word")) return <DocIcon />;
+  if (mime.includes("google-apps.document")) return <DocIcon />;
+  return <TextIcon />;
 };
 
-type Props = {
-  authCode: string;
-};
+/* ---------------- COMPONENT ---------------- */
 
-export default function FileList({ authCode }: Props) {
-  const [files, setFiles] = useState<DriveFile[]>([]);
-  const [selectedFile, setSelectedFile] = useState<DriveFile | null>(null);
+export default function FileList({ authCode }: { authCode: string }) {
+  const [files, setFiles] = useState<FileMeta[]>([]);
+  const [selectedFile, setSelectedFile] = useState<FileMeta | null>(null);
+  const [summary, setSummary] = useState("");
   const [loadingFiles, setLoadingFiles] = useState(false);
-  const [summarizing, setSummarizing] = useState(false);
-  const [summary, setSummary] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [loadingSummary, setLoadingSummary] = useState(false);
 
-  // 🔒 Prevent duplicate API calls (React StrictMode)
-  const hasFetched = useRef(false);
+  // 🔹 Frontend cache (max 10)
+  const [summaryCache, setSummaryCache] = useState<CachedSummary[]>([]);
+
+  /* -------- Fetch Drive Files -------- */
 
   useEffect(() => {
-    if (!authCode) return;
-    if (hasFetched.current) return;
-
-    hasFetched.current = true;
     fetchFiles();
-  }, [authCode]);
+  }, []);
 
-  async function fetchFiles() {
+  const fetchFiles = async () => {
+    setLoadingFiles(true);
+    setSelectedFile(null);
+    setSummary("");
+
     try {
-      setLoadingFiles(true);
-
       const res = await axios.post(
         "http://localhost:8000/drive/files",
         null,
         { params: { auth_code: authCode } }
       );
-
-      console.log("Drive files:", res.data);
-      setFiles(res.data); // backend returns array
+      setFiles(res.data);
     } catch (err) {
       console.error(err);
-      setError("Failed to load files");
+      alert("Failed to load Drive files");
     } finally {
       setLoadingFiles(false);
     }
-  }
+  };
 
-  async function handleSummarize() {
+  /* -------- Cache Helpers -------- */
+
+  const getCachedSummary = (fileId: string) => {
+    return summaryCache.find((c) => c.file_id === fileId);
+  };
+
+  const saveToCache = (file_id: string, file_name: string, summary: string) => {
+    setSummaryCache((prev) => {
+      const filtered = prev.filter((c) => c.file_id !== file_id);
+
+      const updated = [
+        ...filtered,
+        {
+          file_id,
+          file_name,
+          summary,
+          cachedAt: Date.now(),
+        },
+      ];
+
+      // keep only latest 10
+      return updated.slice(-10);
+    });
+  };
+
+  /* -------- Summarize Selected File -------- */
+
+  const handleSummarize = async () => {
     if (!selectedFile) return;
 
-    setSummarizing(true);
-    setSummary(null);
-    setError(null);
+    // ✅ CACHE HIT
+    const cached = getCachedSummary(selectedFile.id);
+    if (cached) {
+      setSummary(cached.summary);
+      return;
+    }
+
+    // ❌ CACHE MISS → backend call
+    setLoadingSummary(true);
+    setSummary("");
 
     try {
-      const res = await axios.post(
-        "http://localhost:8000/drive/summarize",
+      const res = await fetch(
+        `http://localhost:8000/drive/summarize?auth_code=${authCode}`,
         {
-          file_id: selectedFile.id,
-          file_name: selectedFile.name,
-          mime_type: selectedFile.mimeType,
-        },
-        {
-          params: { auth_code: authCode },
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            file_id: selectedFile.id,
+            file_name: selectedFile.name,
+            mime_type: selectedFile.mimeType,
+          }),
         }
       );
 
-      console.log("Summary response:", res.data);
-      setSummary(res.data.summary);
+      if (!res.ok) throw new Error("Summarization failed");
+
+      const data = await res.json();
+      setSummary(data.summary);
+
+      // 🔹 save to cache
+      saveToCache(selectedFile.id, selectedFile.name, data.summary);
     } catch (err) {
       console.error(err);
-      setError("Failed to summarize file");
+      alert("Failed to summarize file");
     } finally {
-      setSummarizing(false);
+      setLoadingSummary(false);
     }
-  }
+  };
 
-  if (loadingFiles) return <p>📂 Loading files…</p>;
-  if (error) return <p style={{ color: "red" }}>{error}</p>;
+  /* ---------------- UI ---------------- */
+
+  const isCached =
+    selectedFile && getCachedSummary(selectedFile.id) !== undefined;
 
   return (
-    <div style={{ marginTop: 24 }}>
-      <h3>Your Google Drive Files</h3>
+    <>
+      {/* FILE LIST */}
+      <div className="file-list-container">
+        {loadingFiles && <div className="hint">Loading files…</div>}
 
-      <ul style={{ listStyle: "none", padding: 0 }}>
+        {!loadingFiles && files.length === 0 && (
+          <div className="hint">No files found</div>
+        )}
+
         {files.map((file) => (
-          <li
+          <div
             key={file.id}
-            onClick={() => setSelectedFile(file)}
-            style={{
-              padding: "8px 12px",
-              marginBottom: 6,
-              cursor: "pointer",
-              borderRadius: 6,
-              background:
-                selectedFile?.id === file.id ? "#e6f0ff" : "#f7f7f7",
-              border:
-                selectedFile?.id === file.id
-                  ? "1px solid #4a90e2"
-                  : "1px solid #ddd",
+            className={`file-item ${
+              selectedFile?.id === file.id ? "selected" : ""
+            }`}
+            onClick={() => {
+              setSelectedFile(file);
+              const cached = getCachedSummary(file.id);
+              setSummary(cached ? cached.summary : "");
             }}
           >
-            📄 {file.name}
-            <div style={{ fontSize: 12, color: "#666" }}>
-              {file.mimeType}
+            <div className="file-left">
+              <div className="file-icon">{getFileIcon(file.mimeType)}</div>
+              <div>
+                <div className="file-name">{file.name}</div>
+                <div className="file-type">{file.mimeType}</div>
+              </div>
             </div>
-          </li>
+          </div>
         ))}
-      </ul>
+      </div>
 
-      <button
-        onClick={handleSummarize}
-        disabled={!selectedFile || summarizing}
-        style={{
-          marginTop: 16,
-          padding: "10px 16px",
-          cursor: selectedFile ? "pointer" : "not-allowed",
-        }}
-      >
-        🧠 {summarizing ? "Summarizing…" : "Summarize Selected File"}
-      </button>
+      {/* ACTION BAR */}
+      <div className="action-bar">
+        <button
+          className="primary-btn"
+          disabled={!selectedFile || loadingSummary}
+          onClick={handleSummarize}
+        >
+          {loadingSummary
+            ? "Summarizing…"
+            : isCached
+            ? "Loaded from Cache"
+            : "Summarize Selected File"}
+        </button>
+      </div>
 
+      {/* SUMMARY */}
       {summary && (
-        <div style={{ marginTop: 24 }}>
+        <div className="summary-box">
           <h3>Summary</h3>
-          <p style={{ whiteSpace: "pre-wrap" }}>{summary}</p>
+          <p>{summary}</p>
         </div>
       )}
-    </div>
+    </>
   );
 }
+

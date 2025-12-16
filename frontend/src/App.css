@@ -1,42 +1,289 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
+/* ---------- GLOBAL ---------- */
+body {
+  margin: 0;
+  background: radial-gradient(circle at top, #0f172a, #020617);
+  font-family: Inter, system-ui, sans-serif;
+  color: #e5e7eb;
+}
+
+/* ---------- HEADER ---------- */
+.app-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 36px;
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #1e293b;
+}
+
+.app-logo {
+  height: 34px;
+}
+
+.app-title {
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* ---------- MAIN CARD ---------- */
+.main-card {
+  max-width: 960px;
+  margin: 40px auto;
+  padding: 28px;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(18px);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 1px #1e293b,
+    0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+/* ---------- FILE LIST ---------- */
+.file-list-container {
+  max-height: 360px;
+  overflow-y: auto;
+  border-radius: 14px;
+  border: 1px solid #1e293b;
+  background: rgba(2, 6, 23, 0.6);
+}
+
+/* Scrollbar polish */
+.file-list-container::-webkit-scrollbar {
+  width: 8px;
+}
+.file-list-container::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 4px;
+}
+
+/* ---------- FILE ROW ---------- */
+.file-item {
+  padding: 14px 18px;
+  border-bottom: 1px solid #1e293b;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.file-item:last-child {
+  border-bottom: none;
+}
+
+.file-item:hover {
+  background: rgba(30, 41, 59, 0.7);
+}
+
+.file-item.selected {
+  background: linear-gradient(
+    90deg,
+    rgba(37, 99, 235, 0.35),
+    rgba(37, 99, 235, 0.1)
+  );
+  box-shadow: inset 4px 0 0 #2563eb;
+}
+
+.file-left {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.file-icon {
+  font-size: 22px;
+}
+
+.file-name {
+  font-weight: 500;
+}
+
+.file-type {
+  font-size: 12px;
+  opacity: 0.65;
+}
+
+/* ---------- ACTION BAR ---------- */
+.action-bar {
+  position: sticky;
+  bottom: 0;
+  margin-top: 16px;
+  padding-top: 16px;
+  background: linear-gradient(
+    to top,
+    rgba(15, 23, 42, 0.95),
+    rgba(15, 23, 42, 0)
+  );
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* ---------- BUTTON ---------- */
+.primary-btn {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: white;
+  border: none;
+  padding: 12px 22px;
+  border-radius: 10px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.primary-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 30px rgba(37, 99, 235, 0.45);
+}
+
+.primary-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* ---------- SUMMARY ---------- */
+.summary-box {
+  margin-top: 28px;
+  padding: 22px;
+  border-radius: 16px;
+  background: rgba(2, 6, 23, 0.75);
+  border: 1px solid #1e293b;
+  line-height: 1.65;
+}
+
+.summary-box h3 {
+  margin-top: 0;
+  margin-bottom: 12px;
+  font-weight: 600;
+}
+
+/* ---------- HINT TEXT ---------- */
+.hint {
+  padding: 18px;
+  opacity: 0.6;
   text-align: center;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+
+/* ---------- LOGIN LANDING ---------- */
+
+.login-container {
+  text-align: center;
+  max-width: 520px;
+  margin: 0 auto;
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+.login-heading {
+  font-size: 26px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #0f172a;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+.login-description {
+  font-size: 15px;
+  color: #475569;
+  line-height: 1.6;
+  margin-bottom: 32px;
 }
 
-.card {
-  padding: 2em;
+.login-action {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 16px;
 }
 
-.read-the-docs {
-  color: #888;
+.login-note {
+  font-size: 12px;
+  color: #64748b;
+}
+
+/* ---------- GOOGLE BUTTON ---------- */
+
+.google-login-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
+}
+
+.google-login-btn img {
+  width: 18px;
+  height: 18px;
+}
+
+.google-login-btn:hover {
+  background: #f8fafc;
+  transform: translateY(-1px);
+}
+
+.google-login-btn:active {
+  transform: translateY(0);
+}
+
+
+.user-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.user-email {
+  font-size: 14px;
+  color: #ccc;
+}
+
+.logout-btn {
+  background: transparent;
+  border: 1px solid #555;
+  color: #fff;
+  padding: 6px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.summarize-btn {
+  margin-top: 16px;
+  padding: 12px;
+  width: 100%;
+  background: #6cf2c2;
+  border: none;
+  border-radius: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.summarize-btn:disabled {
+  background: #333;
+  cursor: not-allowed;
+}
+
+.summary-card {
+  margin-top: 20px;
+  background: #141414;
+  border: 1px solid #222;
+  padding: 16px;
+  border-radius: 12px;
+}
+
+.summary-card h3 {
+  margin-bottom: 8px;
+}
+
+.google-login-btn {
+  background: #ffffff;
+  color: #000;
+  border: none;
+  padding: 12px 18px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
 }

@@ -1,26 +1,37 @@
-import { useGoogleLogin } from "@react-oauth/google";
+import { GoogleOAuthProvider, useGoogleLogin } from "@react-oauth/google";
 
-type Props = {
-  onAuthCode: (code: string) => void;
-};
+const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
-export default function GoogleLoginBtn({ onAuthCode }: Props) {
+function LoginButton({ onAuthCode }: { onAuthCode: (code: string) => void }) {
   const login = useGoogleLogin({
     flow: "auth-code",
-    scope:
-      "openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/drive.readonly",
-    onSuccess: (response) => {
-      console.log("OAuth SUCCESS:", response);
-      onAuthCode(response.code);
+    scope: "https://www.googleapis.com/auth/drive.readonly",
+    onSuccess: (codeResponse) => {
+      console.log("Auth code received:", codeResponse.code);
+      onAuthCode(codeResponse.code);
     },
-    onError: (error) => {
-      console.error("OAuth ERROR:", error);
+    onError: () => {
+      alert("Google login failed");
     },
   });
 
   return (
-    <button onClick={() => login()}>
-      🔐 Login with Google
+    <button className="google-login-btn" onClick={() => login()}>
+      <img src="GoogleLogin.png" alt="Google" />
+      <span>Continue with Google</span>
     </button>
   );
 }
+
+export default function GoogleLoginBtn({
+  onAuthCode,
+}: {
+  onAuthCode: (code: string) => void;
+}) {
+  return (
+    <GoogleOAuthProvider clientId={CLIENT_ID}>
+      <LoginButton onAuthCode={onAuthCode} />
+    </GoogleOAuthProvider>
+  );
+}
+
