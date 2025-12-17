@@ -62,7 +62,7 @@ The backend provides:
 - Summarization APIs
 
 ### ➡️ Go to backend setup instructions:
-👉 backend/README.md
+👉 [Backend Setup Guide](./backend/README.md)
 
 ### 2️⃣ Frontend Setup
 The frontend provides:
@@ -72,8 +72,7 @@ The frontend provides:
 - UX features (search, cache, keyboard)
 
 ### ➡️ Go to frontend setup instructions:
-
-👉 frontend/README.md
+👉 [Frontend Setup Guide](./frontend/README.md)
 
 ## 🔑 Environment Requirements (Summary)
 | Component | Requirement                       |
