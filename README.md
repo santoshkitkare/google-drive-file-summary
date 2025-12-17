@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/banner.png" alt="Google Drive File Summarizer" width="100%" />
+  <img src="assets/Project_banner.PNG" alt="Google Drive File Summarizer" width="100%" />
 </p>
 # 🚀 Google Drive File Summarizer
 
