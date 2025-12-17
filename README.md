@@ -1,6 +1,7 @@
 <p align="center">
   <img src="assets/Project_banner.PNG" alt="Google Drive File Summarizer" width="100%" />
 </p>
+
 # 🚀 Google Drive File Summarizer
 
 An end-to-end application that securely connects to Google Drive, lets users browse files and folders, and generates AI-powered summaries — built with a React frontend and a FastAPI backend using Google OAuth.
