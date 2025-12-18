@@ -7,12 +7,19 @@ import remarkGfm from "remark-gfm";
 const API_BASE = "http://localhost:8000";
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 
+const SUPPORTED_MIME_TYPES = new Set([
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.google-apps.document",
+  "text/plain",
+]);
+
 /* ---------------- ICONS ---------------- */
 
-const FolderIcon = () => <span style={{ color: "#facc15" }}>📁</span>;
-const PdfIcon = () => <span style={{ color: "#ef4444" }}>📄</span>;
-const DocIcon = () => <span style={{ color: "#3b82f6" }}>📝</span>;
-const TextIcon = () => <span style={{ color: "#22c55e" }}>📃</span>;
+const FolderIcon = () => <span>📁</span>;
+const PdfIcon = () => <span>📄</span>;
+const DocIcon = () => <span>📝</span>;
+const TextIcon = () => <span>📃</span>;
 
 function getFileIcon(mime: string) {
   if (mime === FOLDER_MIME) return <FolderIcon />;
@@ -42,15 +49,21 @@ export default function FileList({ sessionId }: { sessionId: string }) {
   const [folderStack, setFolderStack] = useState<FolderStackItem[]>([
     { id: null, name: "My Drive" },
   ]);
-  const [selectedIndex, setSelectedIndex] = useState<number>(-1);
+  const [selectedIndex, setSelectedIndex] = useState(-1);
   const [summary, setSummary] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [loadingSummary, setLoadingSummary] = useState(false);
-
   const [cache, setCache] = useState<CachedSummary[]>([]);
 
   const currentFolderId = folderStack[folderStack.length - 1].id;
+
+  /* ---------------- HELPERS ---------------- */
+
+  function isSupportedFile(mimeType: string) {
+    return SUPPORTED_MIME_TYPES.has(mimeType);
+  }
 
   /* ---------------- FETCH FILES ---------------- */
 
@@ -62,6 +75,7 @@ export default function FileList({ sessionId }: { sessionId: string }) {
     setLoadingFiles(true);
     setSelectedIndex(-1);
     setSummary("");
+    setError(null);
 
     try {
       const res = await axios.post(
@@ -84,17 +98,22 @@ export default function FileList({ sessionId }: { sessionId: string }) {
 
   /* ---------------- SEARCH ---------------- */
 
-  const filteredFiles = useMemo(() => {
-    return files.filter((f) =>
-      f.name.toLowerCase().includes(search.toLowerCase())
-    );
-  }, [files, search]);
+  const filteredFiles = useMemo(
+    () =>
+      files.filter((f) =>
+        f.name.toLowerCase().includes(search.toLowerCase())
+      ),
+    [files, search]
+  );
 
   const selectedItem =
     selectedIndex >= 0 ? filteredFiles[selectedIndex] : null;
 
-  const isFileSelected =
-    selectedItem && selectedItem.mimeType !== FOLDER_MIME;
+  const isSummarizeDisabled =
+    loadingSummary ||
+    !selectedItem ||
+    selectedItem.mimeType === FOLDER_MIME ||
+    !isSupportedFile(selectedItem.mimeType);
 
   /* ---------------- CACHE ---------------- */
 
@@ -112,16 +131,11 @@ export default function FileList({ sessionId }: { sessionId: string }) {
   /* ---------------- ACTIONS ---------------- */
 
   async function summarizeSelectedFile() {
-    if (!selectedItem || selectedItem.mimeType === FOLDER_MIME) return;
-
-    const cached = getCached(selectedItem.id);
-    if (cached) {
-      setSummary(cached.summary);
-      return;
-    }
+    if (isSummarizeDisabled || !selectedItem) return;
 
     setLoadingSummary(true);
     setSummary("");
+    setError(null);
 
     try {
       const response = await fetch(`${API_BASE}/drive/summarize`, {
@@ -135,16 +149,16 @@ export default function FileList({ sessionId }: { sessionId: string }) {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const err = await response.json();
-        throw new Error(err.detail || "Summarization failed");
+        throw new Error(data.detail || "Failed to summarize file");
       }
 
-      const data = await response.json();
       setSummary(data.summary);
       saveToCache(selectedItem.id, data.summary);
     } catch (err: any) {
-      alert(err.message || "Failed to summarize file");
+      setError(err.message);
     } finally {
       setLoadingSummary(false);
     }
@@ -159,45 +173,14 @@ export default function FileList({ sessionId }: { sessionId: string }) {
     setFolderStack((prev) => prev.slice(0, -1));
   }
 
-  /* ---------------- KEYBOARD NAV ---------------- */
-
-  useEffect(() => {
-    function handleKey(e: KeyboardEvent) {
-      if (!filteredFiles.length) return;
-
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setSelectedIndex((i) =>
-          Math.min(i + 1, filteredFiles.length - 1)
-        );
-      }
-
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setSelectedIndex((i) => Math.max(i - 1, 0));
-      }
-
-      if (e.key === "Enter" && isFileSelected) {
-        summarizeSelectedFile();
-      }
-    }
-
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [filteredFiles, selectedIndex, isFileSelected]);
-
   /* ---------------- UI ---------------- */
 
   return (
     <>
       <div className="drive-header-row">
-        {/* LEFT: DRIVE TITLE */}
         <div className="drive-title">
-          <span className="drive-icon">📁</span>
-          <span className="drive-text">
-            {folderStack[folderStack.length - 1].name}
-          </span>
-
+          <span>📁</span>
+          <span>{folderStack[folderStack.length - 1].name}</span>
           {folderStack.length > 1 && (
             <button className="back-btn" onClick={goBack}>
               ← Back
@@ -205,15 +188,9 @@ export default function FileList({ sessionId }: { sessionId: string }) {
           )}
         </div>
 
-        {/* RIGHT: SEARCH */}
-        <div className="search-wrapper horizontal">
-          <label className="search-label" htmlFor="drive-search">
-            Search files
-          </label>
+        <div className="search-wrapper">
+          <label>Search files</label>
           <input
-            id="drive-search"
-            className="search-input"
-            placeholder="Type to filter…"
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -223,23 +200,24 @@ export default function FileList({ sessionId }: { sessionId: string }) {
         </div>
       </div>
 
-      {/* FILE LIST */}
       <div className="file-list-container">
         {loadingFiles && <div className="hint">Loading…</div>}
 
         {!loadingFiles &&
           filteredFiles.map((item, index) => {
-            const isSelected = index === selectedIndex;
             const isCached =
               item.mimeType !== FOLDER_MIME && getCached(item.id);
 
             return (
               <div
                 key={item.id}
-                className={`file-item ${isSelected ? "selected" : ""}`}
+                className={`file-item ${
+                  index === selectedIndex ? "selected" : ""
+                }`}
                 onClick={() => {
                   setSelectedIndex(index);
                   setSummary("");
+                  setError(null);
 
                   if (item.mimeType === FOLDER_MIME) {
                     openFolder(item);
@@ -247,13 +225,17 @@ export default function FileList({ sessionId }: { sessionId: string }) {
                 }}
               >
                 <div className="file-left">
-                  <div className="file-icon">
-                    {getFileIcon(item.mimeType)}
-                  </div>
-                  <div>
-                    <div className="file-name">{item.name}</div>
-                    <div className="file-type">{item.mimeType}</div>
-                  </div>
+                  {getFileIcon(item.mimeType)}
+                  <span className="file-name">
+                    {item.name}
+                    {!isSupportedFile(item.mimeType) &&
+                      item.mimeType !== FOLDER_MIME && (
+                        <span className="unsupported-tag">
+                          {" "}
+                          (unsupported)
+                        </span>
+                      )}
+                  </span>
                 </div>
 
                 {isCached && <span className="cached-badge">Cached</span>}
@@ -262,25 +244,33 @@ export default function FileList({ sessionId }: { sessionId: string }) {
           })}
       </div>
 
-      {/* ACTION BAR */}
-      <div className="action-bar">
-        <button
-          className="primary-btn"
-          disabled={!isFileSelected || loadingSummary}
-          onClick={summarizeSelectedFile}
-        >
-          {!selectedItem
-            ? "Select a file"
-            : selectedItem.mimeType === FOLDER_MIME
-            ? "Open folder"
-            : loadingSummary
-            ? "Summarizing…"
-            : "Summarize (Enter)"}
-        </button>
-      </div>
+      <button
+        className={`summarize-btn ${
+          isSummarizeDisabled ? "disabled" : ""
+        }`}
+        disabled={isSummarizeDisabled}
+        onClick={summarizeSelectedFile}
+        title={
+          loadingSummary
+            ? "Summarization in progress"
+            : selectedItem &&
+              selectedItem.mimeType !== FOLDER_MIME &&
+              !isSupportedFile(selectedItem.mimeType)
+            ? "This file type is not supported for summarization"
+            : "Select a supported file to summarize"
+        }
+      >
+        {loadingSummary ? "Summarizing…" : "Summarize"}
+      </button>
 
-      {/* SUMMARY */}
-      {summary && (
+      {error && (
+        <div className="summary-box error">
+          <h3>Error</h3>
+          <p>{error}</p>
+        </div>
+      )}
+
+      {summary && !error && (
         <div className="summary-box">
           <h3>Summary</h3>
           <ReactMarkdown remarkPlugins={[remarkGfm]}>
