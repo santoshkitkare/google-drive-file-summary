@@ -7,7 +7,6 @@ import type { UserProfile } from "./types";
 import "./App.css";
 
 export default function App() {
-  // 🔐 Load session from storage ONCE
   const [sessionId, setSessionId] = useState<string | null>(() =>
     sessionStorage.getItem("session_id")
   );
@@ -15,13 +14,11 @@ export default function App() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loadingUser, setLoadingUser] = useState(false);
 
-  /* ---------------- LOGIN (ONLY ON GOOGLE CALLBACK) ---------------- */
+  /* ---------------- LOGIN ---------------- */
 
   async function handleGoogleAuth(authCode: string) {
     try {
       const sid = await loginWithGoogle(authCode);
-
-      // ✅ persist session
       sessionStorage.setItem("session_id", sid);
       setSessionId(sid);
     } catch (err) {
@@ -30,7 +27,7 @@ export default function App() {
     }
   }
 
-  /* ---------------- LOAD USER FROM SESSION ---------------- */
+  /* ---------------- LOAD USER ---------------- */
 
   useEffect(() => {
     if (!sessionId) return;
@@ -59,7 +56,6 @@ export default function App() {
 
   return (
     <div className="app-root">
-      {/* HEADER */}
       <header className="app-header">
         <div className="header-left">
           <img src="/GoogleDriveFileSummary.png" className="app-logo" />
@@ -78,9 +74,7 @@ export default function App() {
         )}
       </header>
 
-      {/* MAIN */}
       <main className="main-card">
-        {/* LOGIN */}
         {!sessionId && (
           <div className="login-container">
             <h2 className="login-heading">
@@ -96,17 +90,15 @@ export default function App() {
             </div>
 
             <p className="login-note">
-              🔒 We only request <strong>read-only</strong> access to your files.
+              🔒 Read-only access to your Google Drive
             </p>
           </div>
         )}
 
-        {/* LOADING USER */}
         {sessionId && loadingUser && (
           <div className="hint">Loading your account…</div>
         )}
 
-        {/* APP */}
         {sessionId && user && <FileList sessionId={sessionId} />}
       </main>
     </div>

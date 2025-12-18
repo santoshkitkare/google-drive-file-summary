@@ -10,11 +10,10 @@ from app.auth.google_oauth import (
     login_with_google,
 )
 from app.drive.client import (
+    list_root_items,
+    list_folder_items,
     download_file,
     export_google_doc,
-    list_files,
-    list_folder_items,
-    list_root_items,
 )
 from app.readers.docx import read_docx
 from app.readers.pdf import read_pdf
@@ -23,6 +22,11 @@ from app.summarizer.llm import summarize
 
 router = APIRouter()
 
+
+# =========================
+# REQUEST MODELS
+# =========================
+
 class SummarizeRequest(BaseModel):
     session_id: str
     file_id: str
@@ -30,7 +34,9 @@ class SummarizeRequest(BaseModel):
     mime_type: str
 
 
-# ---------- AUTH ----------
+# =========================
+# AUTH
+# =========================
 
 @router.post("/auth/login")
 def google_login(auth_code: str = Query(...)):
@@ -53,65 +59,19 @@ def get_current_user(session_id: str = Query(...)):
         raise HTTPException(status_code=401, detail=str(e))
 
 
-# ---------- DRIVE ----------
+# =========================
+# GOOGLE DRIVE BROWSING
+# =========================
 
 @router.post("/drive/files")
-def get_files(session_id: str = Query(...)):
-    try:
-        service = get_drive_service(session_id)
-        return list_files(service)
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/drive/summarize")
-def summarize_drive_file(payload: SummarizeRequest):
-    try:
-        session_id = payload.session_id
-        file_id = payload.file_id
-        filename = payload.filename
-        mime_type = payload.mime_type
-
-        service = get_drive_service(session_id)
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            local_path = os.path.join(tmpdir, filename)
-
-            if mime_type == "application/vnd.google-apps.document":
-                export_google_doc(service, file_id, local_path)
-                text = read_txt(local_path)
-            else:
-                download_file(service, file_id, local_path)
-
-                if filename.lower().endswith(".pdf"):
-                    text = read_pdf(local_path)
-                elif filename.lower().endswith(".docx"):
-                    text = read_docx(local_path)
-                elif filename.lower().endswith(".txt"):
-                    text = read_txt(local_path)
-                else:
-                    raise HTTPException(status_code=400, detail="Unsupported file type")
-
-        if not text.strip():
-            raise HTTPException(status_code=400, detail="File is empty")
-
-        cache_key = f"{file_id}:{filename}"
-        summary = summarize(text, cache_key)
-
-        return {"summary": summary}
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-
-@router.post("/drive/files")
-def get_drive_items(
+def browse_drive(
     session_id: str = Query(...),
     folder_id: str | None = Query(default=None),
 ):
     """
-    - If folder_id is None → list root items
-    - Else → list items inside folder
+    Folder-wise Google Drive browsing:
+    - No folder_id → list root folders + files
+    - With folder_id → list contents of that folder
     """
     try:
         service = get_drive_service(session_id)
@@ -123,3 +83,62 @@ def get_drive_items(
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# =========================
+# FILE SUMMARIZATION
+# =========================
+
+@router.post("/drive/summarize")
+def summarize_drive_file(payload: SummarizeRequest):
+    try:
+        service = get_drive_service(payload.session_id)
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            local_path = os.path.join(tmpdir, payload.filename)
+
+            if payload.mime_type == "application/vnd.google-apps.document":
+                export_google_doc(service, payload.file_id, local_path)
+                text = read_txt(local_path)
+            else:
+                download_file(service, payload.file_id, local_path)
+
+                filename = payload.filename.lower()
+                if filename.endswith(".pdf"):
+                    text = read_pdf(local_path)
+                elif filename.endswith(".docx"):
+                    text = read_docx(local_path)
+                elif filename.endswith(".txt"):
+                    text = read_txt(local_path)
+                else:
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Unsupported file type"
+                    )
+
+        if not text or not text.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="No readable text could be extracted from this file. "
+                    "The file may be empty, scanned, or unsupported."
+            )
+
+        cache_key = f"{payload.file_id}:{payload.filename}"
+        summary = summarize(text, cache_key)
+
+        return {"summary": summary}
+
+    except HTTPException:
+        raise
+
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"File processing error: {str(e)}"
+        )
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail="Unexpected error occurred while processing the file."
+        )
