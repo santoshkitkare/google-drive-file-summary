@@ -122,6 +122,7 @@ Create a `.env` file in the `backend/` folder:
 
 ```env
 OPENAI_API_KEY=your_openai_api_key_here
+OPENAI_MODEL=openai_model_name default: gpt-4o-mini
 ```
 
 ## 📥 Code Checkout
