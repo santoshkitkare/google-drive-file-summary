@@ -1,0 +1,1 @@
+frontend_bucket_name = "google-drive-file-summarizer"
