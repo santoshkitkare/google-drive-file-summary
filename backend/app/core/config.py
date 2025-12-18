@@ -17,6 +17,10 @@ class Settings:
     OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
     MAX_SUMMARY_WORDS = 300
     MAX_TEXT_CHARS = 12000
+    GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+    GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
+    OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+    SESSION_SECRET = os.getenv("SESSION_SECRET")
 
 
 settings = Settings()

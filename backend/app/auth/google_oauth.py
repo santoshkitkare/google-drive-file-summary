@@ -1,5 +1,7 @@
+import os
 import uuid
 from typing import Dict
+from app.core.config import settings
 
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
@@ -18,11 +20,27 @@ _SESSION_STORE: Dict[str, dict] = {}
 
 
 def login_with_google(auth_code: str) -> str:
-    flow = Flow.from_client_secrets_file(
-        "credentials.json",
-        scopes=SCOPES,
-        redirect_uri="postmessage",
-    )
+    if os.path.exists("credentials.json"):   
+        flow = Flow.from_client_secrets_file(
+            "credentials.json",
+            scopes=SCOPES,
+            redirect_uri="postmessage",
+        )
+    else:
+        client_config = {
+            "web": {
+                "client_id": settings.GOOGLE_CLIENT_ID,
+                "client_secret": settings.GOOGLE_CLIENT_SECRET,
+                "redirect_uris": ["postmessage"],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+            }
+        }
+        flow = Flow.from_client_config(
+            client_config,
+            scopes=SCOPES,
+            redirect_uri="postmessage",
+        )
 
     flow.fetch_token(code=auth_code)
     creds: Credentials = flow.credentials

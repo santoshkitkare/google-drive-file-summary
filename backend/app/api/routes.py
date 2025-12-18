@@ -33,7 +33,6 @@ class SummarizeRequest(BaseModel):
     filename: str
     mime_type: str
 
-
 # =========================
 # AUTH
 # =========================
