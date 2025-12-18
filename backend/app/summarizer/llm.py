@@ -26,7 +26,7 @@ TEXT:
 """
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=settings.OPENAI_MODEL,
         messages=[
             {"role": "system", "content": "You are a precise summarization assistant."},
             {"role": "user", "content": prompt},
@@ -57,7 +57,7 @@ SUMMARIES:
 """
 
     response = client.chat.completions.create(
-        model="gpt-4o-mini",
+        model=settings.OPENAI_MODEL,
         messages=[
             {"role": "system", "content": "You are a senior technical writer."},
             {"role": "user", "content": final_prompt},
