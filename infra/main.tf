@@ -1,10 +1,4 @@
-data "aws_vpc" "default" {
-  default = true
-}
-
-data "aws_subnets" "default" {
-  filter {
-    name   = "vpc-id"
-    values = [data.aws_vpc.default.id]
-  }
+locals {
+  app_name = "${var.project_name}-backend"
+  fqdn     = "${var.api_subdomain}.${var.domain_name}"
 }

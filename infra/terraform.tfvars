@@ -1,1 +1,5 @@
-frontend_bucket_name = "google-drive-file-summarizer"
+google_client_id     = "<google-client-id-web-app>"
+google_client_secret = "<google-secret>"
+google_redirect_uri  = "https://app.santoshkitkare.com"
+openai_api_key       = "<open-ai-key>"
+openai_model         = "gpt-4o-mini"

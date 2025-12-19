@@ -1,5 +1,5 @@
-resource "aws_iam_role" "ecs_task_role" {
-  name = "${var.project_name}-task-role"
+resource "aws_iam_role" "ecs_task_execution" {
+  name = "${local.app_name}-task-exec"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -11,15 +11,7 @@ resource "aws_iam_role" "ecs_task_role" {
   })
 }
 
-resource "aws_iam_role_policy" "secrets_access" {
-  role = aws_iam_role.ecs_task_role.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect   = "Allow"
-      Action   = ["secretsmanager:GetSecretValue"]
-      Resource = "*"
-    }]
-  })
+resource "aws_iam_role_policy_attachment" "ecs_task_exec_policy" {
+  role       = aws_iam_role.ecs_task_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
 }

@@ -1,14 +1,13 @@
 import axios from "axios";
 import type { LoginResponse, UserProfile } from "../types";
 
-const API_BASE = import.meta.env.VITE_BACKEND_URL || "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_BACKEND_URL;
 
 /** 🔐 Login ONCE */
 export async function loginWithGoogle(authCode: string): Promise<string> {
   const res = await axios.post<LoginResponse>(
     `${API_BASE}/auth/login`,
-    null,
-    { params: { auth_code: authCode } }
+    { auth_code: authCode }
   );
   return res.data.session_id;
 }

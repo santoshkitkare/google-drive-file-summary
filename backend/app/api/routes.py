@@ -26,6 +26,8 @@ router = APIRouter()
 # =========================
 # REQUEST MODELS
 # =========================
+class LoginRequest(BaseModel):
+    auth_code: str
 
 class SummarizeRequest(BaseModel):
     session_id: str
@@ -38,11 +40,15 @@ class SummarizeRequest(BaseModel):
 # =========================
 
 @router.post("/auth/login")
-def google_login(auth_code: str = Query(...)):
+def google_login(request: LoginRequest):
     try:
-        session_id = login_with_google(auth_code)
+        print("Logging in with auth code:", request.auth_code)
+        session_id = login_with_google(request.auth_code)
+        print("Login successful, session ID:", session_id)
+        print
         return {"session_id": session_id}
     except Exception as e:
+        print("Login error:", str(e))
         raise HTTPException(status_code=400, detail=str(e))
 
 
