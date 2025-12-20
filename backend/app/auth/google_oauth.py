@@ -1,12 +1,13 @@
 import os
 import uuid
 from typing import Dict
-from app.core.config import settings
 
 from google.oauth2.credentials import Credentials
 from google_auth_oauthlib.flow import Flow
 from googleapiclient.discovery import build
 from googleapiclient.discovery import build as build_api
+
+from app.core.config import settings
 
 SCOPES = [
     "openid",

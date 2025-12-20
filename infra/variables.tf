@@ -8,7 +8,7 @@ variable "project_name" {
 
 variable "domain_name" {
   description = "Root domain in Route53"
-  default = "yourdomain.com"
+  default     = "yourdomain.com"
 }
 
 variable "api_subdomain" {
@@ -17,7 +17,7 @@ variable "api_subdomain" {
 
 variable "ecr_image" {
   description = "Full ECR image URI"
-  default = "385046010545.dkr.ecr.ap-south-1.amazonaws.com/drive-file-summary-backend:latest"
+  default     = "385046010545.dkr.ecr.ap-south-1.amazonaws.com/drive-file-summary-backend:latest"
 }
 
 variable "container_port" {
@@ -25,7 +25,7 @@ variable "container_port" {
 }
 variable "frontend_bucket_name" {
   description = "S3 bucket name for frontend"
-  default = "google-drive-file-summary"
+  default     = "google-drive-file-summary"
 }
 
 variable "index_document" {
@@ -52,6 +52,6 @@ variable "openai_api_key" {
 }
 
 variable "openai_model" {
-  type = string
+  type    = string
   default = "gpt-4o-mini"
 }

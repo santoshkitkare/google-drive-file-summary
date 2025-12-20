@@ -1,4 +1,3 @@
-from pathlib import Path
 from googleapiclient.http import MediaIoBaseDownload
 
 SUPPORTED_EXTENSIONS = {".pdf", ".docx", ".txt"}

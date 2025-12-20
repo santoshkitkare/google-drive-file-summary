@@ -5,11 +5,19 @@ resource "aws_cloudfront_distribution" "frontend" {
 
   aliases = ["app.santoshkitkare.com"]
 
+  lifecycle {
+    create_before_destroy = true
+  }
+
   viewer_certificate {
-    acm_certificate_arn      = data.aws_acm_certificate.app_cert.arn
+    acm_certificate_arn      = aws_acm_certificate.app_cert.arn
     ssl_support_method       = "sni-only"
     minimum_protocol_version = "TLSv1.2_2021"
   }
+
+  #viewer_certificate {
+  #  cloudfront_default_certificate = true
+  #}
 
   origin {
     domain_name = aws_s3_bucket.frontend.bucket_regional_domain_name

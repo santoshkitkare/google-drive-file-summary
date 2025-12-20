@@ -19,12 +19,12 @@ resource "aws_s3_bucket_public_access_block" "frontend" {
   restrict_public_buckets = true
 }
 
-resource "aws_s3_bucket_acl" "frontend" {
-  bucket = aws_s3_bucket.frontend.id
-  acl    = "public-read"
-
-  depends_on = [
-    aws_s3_bucket_ownership_controls.frontend,
-    aws_s3_bucket_public_access_block.frontend
-  ]
-}
+# resource "aws_s3_bucket_acl" "frontend" {
+#  bucket = aws_s3_bucket.frontend.id
+#  acl    = "public-read"
+#
+#  depends_on = [
+#    aws_s3_bucket_ownership_controls.frontend,
+#    aws_s3_bucket_public_access_block.frontend
+#  ]
+#}
