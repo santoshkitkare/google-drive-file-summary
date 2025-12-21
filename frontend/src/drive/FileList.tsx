@@ -4,7 +4,7 @@ import type { DriveFile } from "../types";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
-const API_BASE = "http://localhost:8000";
+const API_BASE = import.meta.env.VITE_BACKEND_URL;
 const FOLDER_MIME = "application/vnd.google-apps.folder";
 
 const SUPPORTED_MIME_TYPES = new Set([

@@ -10,7 +10,7 @@ app = FastAPI(title="Google Drive File Summarizer")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -18,5 +18,12 @@ app.add_middleware(
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+# =========================
+# Health
+# =========================
+@router.get("/health")
+def health():
+    return {"status": "ok"}
 
 app.include_router(router)

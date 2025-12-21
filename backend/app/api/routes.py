@@ -10,10 +10,10 @@ from app.auth.google_oauth import (
     login_with_google,
 )
 from app.drive.client import (
-    list_root_items,
-    list_folder_items,
     download_file,
     export_google_doc,
+    list_folder_items,
+    list_root_items,
 )
 from app.readers.docx import read_docx
 from app.readers.pdf import read_pdf
@@ -26,6 +26,8 @@ router = APIRouter()
 # =========================
 # REQUEST MODELS
 # =========================
+class LoginRequest(BaseModel):
+    auth_code: str
 
 class SummarizeRequest(BaseModel):
     session_id: str
@@ -33,17 +35,20 @@ class SummarizeRequest(BaseModel):
     filename: str
     mime_type: str
 
-
 # =========================
 # AUTH
 # =========================
 
 @router.post("/auth/login")
-def google_login(auth_code: str = Query(...)):
+def google_login(request: LoginRequest):
     try:
-        session_id = login_with_google(auth_code)
+        print("Logging in with auth code:", request.auth_code)
+        session_id = login_with_google(request.auth_code)
+        print("Login successful, session ID:", session_id)
+        print
         return {"session_id": session_id}
     except Exception as e:
+        print("Login error:", str(e))
         raise HTTPException(status_code=400, detail=str(e))
 
 
@@ -137,7 +142,7 @@ def summarize_drive_file(payload: SummarizeRequest):
             detail=f"File processing error: {str(e)}"
         )
 
-    except Exception as e:
+    except Exception:
         raise HTTPException(
             status_code=500,
             detail="Unexpected error occurred while processing the file."
