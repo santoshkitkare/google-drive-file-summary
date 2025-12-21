@@ -143,3 +143,7 @@ terraform apply
 Add app + api DNS
 Upload frontend
 ```
+
+
+# For clearing cloudFront cache
+aws cloudfront create-invalidation --distribution-id <distribution-id> --paths "/*"
