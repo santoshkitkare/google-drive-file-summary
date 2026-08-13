@@ -1,0 +1,15 @@
+# Requires Python >= 3.13
+fastapi>=0.124.4
+google-api-python-client>=2.187.0
+google-auth>=2.43.0
+google-auth-oauthlib>=1.2.2
+openai>=2.11.0
+pre-commit>=4.5.0
+pypdf>=6.4.2
+pytest>=9.0.2
+pytest-mock>=3.15.1
+python-docx>=1.2.0
+python-dotenv>=1.2.1
+ruff>=0.14.9
+slowapi>=0.1.9
+uvicorn>=0.38.0
