@@ -152,7 +152,7 @@ Recommended:
 
 ## ▶️ Run the Backend Locally
 ```
-uvicorn app.main:application --reload
+uvicorn app.main:app --reload
 ```
 
 

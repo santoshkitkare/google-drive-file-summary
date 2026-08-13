@@ -6,9 +6,9 @@ from slowapi.errors import RateLimitExceeded
 from app.api.routes import router
 from app.core.rate_limit import limiter
 
-application = FastAPI(title="Google Drive File Summarizer")
+app = FastAPI(title="Google Drive File Summarizer")
 
-application.add_middleware(
+app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
     allow_credentials=True,
@@ -16,8 +16,8 @@ application.add_middleware(
     allow_headers=["*"],
 )
 
-application.state.limiter = limiter
-application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 # =========================
 # Health
@@ -26,4 +26,4 @@ application.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handle
 def health():
     return {"status": "ok"}
 
-application.include_router(router)
+app.include_router(router)
